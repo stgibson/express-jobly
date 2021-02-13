@@ -49,15 +49,62 @@ class Company {
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
-  static async findAll() {
+  static async findAll(filters) {
+    if (!filters || !Object.keys(filters).length) { // Adapted from https://stackoverflow.com/questions/5223/length-of-a-javascript-object
+      const companiesRes = await db.query(
+        `SELECT handle,
+                name,
+                description,
+                num_employees AS "numEmployees",
+                logo_url AS "logoUrl"
+         FROM companies
+         ORDER BY name`);
+      return companiesRes.rows;
+    }
+    const { name, minEmployees, maxEmployees, ...badFilters } = filters;
+    // validate request
+    if (minEmployees && maxEmployees && minEmployees > maxEmployees) {
+      throw new
+        BadRequestError("minEmployees cannot be greater than maxEmployees");
+    }
+    if (Object.keys(badFilters).length) {
+      throw new BadRequestError(
+        "Can only pass name, minEmployees, and maxEmployees as filters"
+      );
+    }
+    // create SQL filtering only for filters passed
+    let filtersSql = "";
+    if (name) {
+      filtersSql += `WHERE name ILIKE '%${name}%'`; // Learned how to use % as wildcard at https://www.w3schools.com/sql/sql_like.asp
+    }
+    if (minEmployees) {
+      // if previous filters weren't passed in, start request with this filter
+      if (!filtersSql) {
+        filtersSql += `WHERE num_employees >= ${minEmployees}`;
+      }
+      // otherwise, add on filter
+      else {
+        filtersSql += ` AND num_employees >= ${minEmployees}`;
+      }
+      
+    }
+    if (maxEmployees) {
+      if (!filtersSql) {
+        filtersSql += `WHERE num_employees <= ${maxEmployees}`;
+      }
+      else {
+        filtersSql += ` AND num_employees <= ${maxEmployees}`;
+      }
+    }
     const companiesRes = await db.query(
-          `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           ORDER BY name`);
+      `SELECT handle,
+              name,
+              description,
+              num_employees AS "numEmployees",
+              logo_url AS "logoUrl"
+       FROM companies ${filtersSql}
+       ORDER BY name`
+    );
     return companiesRes.rows;
   }
 

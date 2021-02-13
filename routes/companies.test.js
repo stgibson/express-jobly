@@ -96,15 +96,45 @@ describe("GET /companies", function () {
     });
   });
 
-  test("fails: test next() handler", async function () {
-    // there's no normal failure event which will cause this route to fail ---
-    // thus making it hard to test that the error-handler works with it. This
-    // should cause an error, all right :)
-    await db.query("DROP TABLE companies CASCADE");
-    const resp = await request(app)
-        .get("/companies")
-        .set("authorization", `Bearer ${u1Token}`);
-    expect(resp.statusCode).toEqual(500);
+  test("filters work", async function () {
+    const params = {
+      name: "c",
+      minEmployees: 2,
+      maxEmployees: 2
+    };
+    const resp = await request(app).get("/companies").query(params); // Adapted from https://stackoverflow.com/questions/40309713/how-to-send-query-string-parameters-using-supertest
+    expect(resp.body).toEqual({
+      companies:
+        [
+          {
+            handle: "c2",
+            name: "C2",
+            description: "Desc2",
+            numEmployees: 2,
+            logoUrl: "http://c2.img",
+          }
+        ]
+    });
+  });
+
+  test("get 400 if minEmployees > maxEmployees", async function () {
+    const params = {
+      minEmployees: 3,
+      maxEmployees: 2
+    };
+    const resp = await request(app).get("/companies").query(params);
+    expect(resp.status).toEqual(400);
+  });
+
+  test("get 400 if send bad filter", async function () {
+    const params = {
+      name: "c",
+      minEmployees: 2,
+      maxEmployees: 2,
+      badFilter: "Bad Filter"
+    };
+    const resp = await request(app).get("/companies").query(params);
+    expect(resp.status).toEqual(400);
   });
 });
 
