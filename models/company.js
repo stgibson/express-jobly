@@ -2,7 +2,7 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate } = require("../helpers/sql");
+const { sqlForPartialUpdate, generateFiltersSql } = require("../helpers/sql");
 
 /** Related functions for companies. */
 
@@ -46,6 +46,11 @@ class Company {
 
   /** Find all companies.
    *
+   * Can filter on provided search filters:
+   * - minEmployees
+   * - maxEmployees
+   * - nameLike (will find case-insensitive, partial matches)
+   * 
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
@@ -61,7 +66,7 @@ class Company {
          ORDER BY name`);
       return companiesRes.rows;
     }
-    const { name, minEmployees, maxEmployees, ...badFilters } = filters;
+    const { nameLike, minEmployees, maxEmployees, ...badFilters } = filters;
     // validate request
     if (minEmployees && maxEmployees && minEmployees > maxEmployees) {
       throw new
@@ -73,29 +78,10 @@ class Company {
       );
     }
     // create SQL filtering only for filters passed
-    let filtersSql = "";
-    if (name) {
-      filtersSql += `WHERE name ILIKE '%${name}%'`; // Learned how to use % as wildcard at https://www.w3schools.com/sql/sql_like.asp
-    }
-    if (minEmployees) {
-      // if previous filters weren't passed in, start request with this filter
-      if (!filtersSql) {
-        filtersSql += `WHERE num_employees >= ${minEmployees}`;
-      }
-      // otherwise, add on filter
-      else {
-        filtersSql += ` AND num_employees >= ${minEmployees}`;
-      }
-      
-    }
-    if (maxEmployees) {
-      if (!filtersSql) {
-        filtersSql += `WHERE num_employees <= ${maxEmployees}`;
-      }
-      else {
-        filtersSql += ` AND num_employees <= ${maxEmployees}`;
-      }
-    }
+    const { filtersSql, values } =
+      generateFiltersSql({ nameLike, minEmployees, maxEmployees });
+    console.log(`filterSql: ${filtersSql}`);
+    console.log(values);
     const companiesRes = await db.query(
       `SELECT handle,
               name,
@@ -103,7 +89,8 @@ class Company {
               num_employees AS "numEmployees",
               logo_url AS "logoUrl"
        FROM companies ${filtersSql}
-       ORDER BY name`
+       ORDER BY name`,
+      values
     );
     return companiesRes.rows;
   }

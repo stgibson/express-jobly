@@ -26,4 +26,43 @@ function sqlForPartialUpdate(dataToUpdate, jsToSql) {
   };
 }
 
-module.exports = { sqlForPartialUpdate };
+/**
+ * Generates SQL code for filtering companies
+ * 
+ * Can filter by nameLike, minEmployees, and maxEmployees
+ * 
+ * Returns SQL code
+ */
+function generateFiltersSql({ nameLike, minEmployees, maxEmployees }) {
+  let filtersSql = "";
+  const values = [];
+  if (nameLike) {
+    filtersSql += "WHERE name ILIKE $1"; // Learned how to use % as wildcard at https://www.w3schools.com/sql/sql_like.asp
+    values.push(`%${nameLike}%`);
+  }
+  if (minEmployees) {
+    // if previous filters weren't passed in, start request with this filter
+    if (!filtersSql) {
+      filtersSql += "WHERE num_employees >= $1";
+    }
+    // otherwise, add on filter
+    else {
+      filtersSql += " AND num_employees >= $2";
+    }
+    values.push(minEmployees);
+  }
+  if (maxEmployees) {
+    // since variable could be $1, $2, or $3, determine by length of values
+    const numVar = values.length + 1
+    if (!filtersSql) {
+      filtersSql += `WHERE num_employees <= $${numVar}`;
+    }
+    else {
+      filtersSql += ` AND num_employees <= $${numVar}`;
+    }
+    values.push(maxEmployees);
+  }
+  return { filtersSql, values };
+}
+
+module.exports = { sqlForPartialUpdate, generateFiltersSql };

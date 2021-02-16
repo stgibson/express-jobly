@@ -98,7 +98,7 @@ describe("GET /companies", function () {
 
   test("filters work", async function () {
     const params = {
-      name: "c",
+      nameLike: "c",
       minEmployees: 2,
       maxEmployees: 2
     };
@@ -128,7 +128,7 @@ describe("GET /companies", function () {
 
   test("get 400 if send bad filter", async function () {
     const params = {
-      name: "c",
+      nameLike: "c",
       minEmployees: 2,
       maxEmployees: 2,
       badFilter: "Bad Filter"

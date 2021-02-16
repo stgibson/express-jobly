@@ -86,9 +86,9 @@ describe("findAll", function () {
     ]);
   });
 
-  test("filters by name", async function () {
-    const name = "c1";
-    const filters = { name };
+  test("filters by nameLike", async function () {
+    const nameLike = "c1";
+    const filters = { nameLike };
     const companies = await Company.findAll(filters);
     expect(companies).toEqual([
       {
@@ -146,10 +146,10 @@ describe("findAll", function () {
   });
 
   test("handles all filters at once", async function () {
-    const name = "c";
+    const nameLike = "c";
     const minEmployees = 2
     const maxEmployees = 2;
-    const filters = { name, minEmployees, maxEmployees };
+    const filters = { nameLike, minEmployees, maxEmployees };
     const companies = await Company.findAll(filters);
     expect(companies).toEqual([
       {
@@ -176,11 +176,11 @@ describe("findAll", function () {
 
   test("throws error if additional filters", async function () {
     try {
-      const name = "c";
+      const nameLike = "c";
       const minEmployees = 2;
       const maxEmployees = 2;
       const badFilter = "Bad Filter";
-      const filters = { name, minEmployees, maxEmployees, badFilter };
+      const filters = { nameLike, minEmployees, maxEmployees, badFilter };
       await Company.findAll(filters);
     }
     catch (err) {
