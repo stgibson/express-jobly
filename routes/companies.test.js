@@ -11,6 +11,7 @@ const {
   commonAfterEach,
   commonAfterAll,
   u1Token,
+  u2Token
 } = require("./_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -26,18 +27,31 @@ describe("POST /companies", function () {
     name: "New",
     logoUrl: "http://new.img",
     description: "DescNew",
-    numEmployees: 10,
+    numEmployees: 10
   };
 
-  test("ok for users", async function () {
+  test("ok for admins", async function () {
     const resp = await request(app)
         .post("/companies")
         .send(newCompany)
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(201);
     expect(resp.body).toEqual({
-      company: newCompany,
+      company: newCompany
     });
+  });
+
+  test("unauth for non-admins", async function () {
+    const resp = await request(app)
+        .post("/companies")
+        .send(newCompany)
+        .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
+  });
+
+  test("unauth for anon", async function () {
+    const resp = await request(app).post("/companies").send(newCompany);
+    expect(resp.statusCode).toEqual(401);
   });
 
   test("bad request with missing data", async function () {
@@ -45,7 +59,7 @@ describe("POST /companies", function () {
         .post("/companies")
         .send({
           handle: "new",
-          numEmployees: 10,
+          numEmployees: 10
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
@@ -56,7 +70,7 @@ describe("POST /companies", function () {
         .post("/companies")
         .send({
           ...newCompany,
-          logoUrl: "not-a-url",
+          logoUrl: "not-a-url"
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
@@ -76,23 +90,23 @@ describe("GET /companies", function () {
               name: "C1",
               description: "Desc1",
               numEmployees: 1,
-              logoUrl: "http://c1.img",
+              logoUrl: "http://c1.img"
             },
             {
               handle: "c2",
               name: "C2",
               description: "Desc2",
               numEmployees: 2,
-              logoUrl: "http://c2.img",
+              logoUrl: "http://c2.img"
             },
             {
               handle: "c3",
               name: "C3",
               description: "Desc3",
               numEmployees: 3,
-              logoUrl: "http://c3.img",
-            },
-          ],
+              logoUrl: "http://c3.img"
+            }
+          ]
     });
   });
 
@@ -111,7 +125,7 @@ describe("GET /companies", function () {
             name: "C2",
             description: "Desc2",
             numEmployees: 2,
-            logoUrl: "http://c2.img",
+            logoUrl: "http://c2.img"
           }
         ]
     });
@@ -149,8 +163,8 @@ describe("GET /companies/:handle", function () {
         name: "C1",
         description: "Desc1",
         numEmployees: 1,
-        logoUrl: "http://c1.img",
-      },
+        logoUrl: "http://c1.img"
+      }
     });
   });
 
@@ -162,8 +176,8 @@ describe("GET /companies/:handle", function () {
         name: "C2",
         description: "Desc2",
         numEmployees: 2,
-        logoUrl: "http://c2.img",
-      },
+        logoUrl: "http://c2.img"
+      }
     });
   });
 
@@ -176,11 +190,11 @@ describe("GET /companies/:handle", function () {
 /************************************** PATCH /companies/:handle */
 
 describe("PATCH /companies/:handle", function () {
-  test("works for users", async function () {
+  test("works for admins", async function () {
     const resp = await request(app)
         .patch(`/companies/c1`)
         .send({
-          name: "C1-new",
+          name: "C1-new"
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.body).toEqual({
@@ -189,16 +203,26 @@ describe("PATCH /companies/:handle", function () {
         name: "C1-new",
         description: "Desc1",
         numEmployees: 1,
-        logoUrl: "http://c1.img",
-      },
+        logoUrl: "http://c1.img"
+      }
     });
+  });
+
+  test("unauth for non-admins", async function () {
+    const resp = await request(app)
+        .patch(`/companies/c1`)
+        .send({
+          name: "C1-new"
+        })
+        .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
   });
 
   test("unauth for anon", async function () {
     const resp = await request(app)
         .patch(`/companies/c1`)
         .send({
-          name: "C1-new",
+          name: "C1-new"
         });
     expect(resp.statusCode).toEqual(401);
   });
@@ -217,7 +241,7 @@ describe("PATCH /companies/:handle", function () {
     const resp = await request(app)
         .patch(`/companies/c1`)
         .send({
-          handle: "c1-new",
+          handle: "c1-new"
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
@@ -227,7 +251,7 @@ describe("PATCH /companies/:handle", function () {
     const resp = await request(app)
         .patch(`/companies/c1`)
         .send({
-          logoUrl: "not-a-url",
+          logoUrl: "not-a-url"
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
@@ -237,11 +261,18 @@ describe("PATCH /companies/:handle", function () {
 /************************************** DELETE /companies/:handle */
 
 describe("DELETE /companies/:handle", function () {
-  test("works for users", async function () {
+  test("works for admins", async function () {
     const resp = await request(app)
         .delete(`/companies/c1`)
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.body).toEqual({ deleted: "c1" });
+  });
+
+  test("unauth for non-admins", async function () {
+    const resp = await request(app)
+        .delete(`/companies/c1`)
+        .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
   });
 
   test("unauth for anon", async function () {
