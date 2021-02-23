@@ -21,13 +21,13 @@ describe("create", function () {
   let newJob = {
     title: "new",
     salary: 60000,
-    equity: "0.45",
+    equity: 0.45,
     companyHandle: 'c1'
   };
 
   test("works", async function () {
     let job = await Job.create(newJob);
-    expect(job).toEqual({ ...newJob, id: expect.any(Number) });
+    expect(job).toEqual({ ...newJob, id: expect.any(Number), equity: "0.45" });
 
     const result = await db.query(
           `SELECT title, salary, equity, company_handle AS "companyHandle"
