@@ -288,7 +288,7 @@ describe("DELETE /jobs/:id", function () {
     expect(resp.statusCode).toEqual(401);
   });
 
-  test("not found for no such company", async function () {
+  test("not found for no such job", async function () {
     const resp = await request(app)
         .delete(`/jobs/0`)
         .set("authorization", `Bearer ${u1Token}`);
