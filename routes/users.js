@@ -92,7 +92,6 @@ router.post("/:username/jobs/:id", ensureLoggedIn, ensureCanAccessUser,
   async function (req, res, next) {
   try {
     await User.apply(req.params.username, req.params.id);
-    console.log("Made it here");
     return res.json({ applied: req.params.id });
   } catch (err) {
     return next(err);
