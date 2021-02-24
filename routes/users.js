@@ -64,7 +64,8 @@ router.get("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
 
 /** GET /[username] => { user }
  *
- * Returns { username, firstName, lastName, isAdmin }
+ * Returns { username, firstName, lastName, email, isAdmin, jobs }
+ *   where jobs is [ jobId, jobId, ... ]
  *
  * Authorization required: login
  **/
@@ -74,6 +75,25 @@ router.get("/:username", ensureLoggedIn, ensureCanAccessUser,
   try {
     const user = await User.get(req.params.username);
     return res.json({ user });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
+/** POST /[username]/jobs/[id] => { applied: jobId }
+ * 
+ * Returns { applied: jobId }
+ * 
+ * Authorization required: login
+ */
+
+router.post("/:username/jobs/:id", ensureLoggedIn, ensureCanAccessUser,
+  async function (req, res, next) {
+  try {
+    await User.apply(req.params.username, req.params.id);
+    console.log("Made it here");
+    return res.json({ applied: req.params.id });
   } catch (err) {
     return next(err);
   }

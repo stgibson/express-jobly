@@ -19,6 +19,13 @@ beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
+// function that gets id for job given title
+async function getId(title) {
+  const result = await
+    db.query("SELECT id FROM jobs WHERE title = $1", [title]);
+  return result.rows[0].id;
+}
+
 /************************************** authenticate */
 
 describe("authenticate", function () {
@@ -133,19 +140,80 @@ describe("findAll", function () {
 
 describe("get", function () {
   test("works", async function () {
-    let user = await User.get("u1");
+    const user = await User.get("u1");
     expect(user).toEqual({
       username: "u1",
       firstName: "U1F",
       lastName: "U1L",
       email: "u1@email.com",
       isAdmin: false,
+      jobs: []
+    });
+  });
+
+  test("works with job application", async function () {
+    const id = await getId("j1");
+    // first have user apply to job
+    await User.apply("u1", id);
+
+    const user = await User.get("u1"); 
+    expect(user).toEqual({
+      username: "u1",
+      firstName: "U1F",
+      lastName: "U1L",
+      email: "u1@email.com",
+      isAdmin: false,
+      jobs: [id]
     });
   });
 
   test("not found if no such user", async function () {
     try {
       await User.get("nope");
+      fail();
+    } catch (err) {
+      expect(err instanceof NotFoundError).toBeTruthy();
+    }
+  });
+});
+
+/************************************** apply */
+
+describe("apply", function () {
+  test("works", async function () {
+    const id = await getId("j1");
+    await User.apply("u1", id);
+    const found = await
+      db.query('SELECT username, job_id AS "jobId" FROM applications');
+    expect(found.rows.length).toEqual(1);
+    expect(found.rows[0].username).toEqual("u1");
+    expect(found.rows[0].jobId).toEqual(id);
+  });
+
+  test("bad request with dup application", async function () {
+    const id = await getId("j1");
+    try {
+      await User.apply("u1", id);
+      await User.apply("u1", id);
+      fail();
+    } catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  });
+
+  test("not found if no such user", async function () {
+    const id = await getId("j1");
+    try {
+      await User.apply("none", id);
+      fail();
+    } catch (err) {
+      expect(err instanceof NotFoundError).toBeTruthy();
+    }
+  });
+
+  test("not found if no such job", async function () {
+    try {
+      await User.apply("u1", 0);
       fail();
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();

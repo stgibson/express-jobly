@@ -117,29 +117,83 @@ class User {
 
   /** Given a username, return data about user.
    *
-   * Returns { username, first_name, last_name, is_admin, jobs }
-   *   where jobs is { id, title, company_handle, company_name, state }
+   * Returns { username, first_name, last_name, email, is_admin, jobs }
+   *   where jobs is [ jobId, jobId, ... ]
    *
    * Throws NotFoundError if user not found.
    **/
 
   static async get(username) {
     const userRes = await db.query(
-          `SELECT username,
-                  first_name AS "firstName",
+          `SELECT first_name AS "firstName",
                   last_name AS "lastName",
                   email,
-                  is_admin AS "isAdmin"
-           FROM users
-           WHERE username = $1`,
+                  is_admin AS "isAdmin",
+                  job_id AS "jobId"
+           FROM users u LEFT JOIN applications a ON u.username = a.username
+           WHERE u.username = $1`,
         [username],
     );
 
-    const user = userRes.rows[0];
+    if (!userRes.rows[0]) throw new NotFoundError(`No user: ${username}`);
 
-    if (!user) throw new NotFoundError(`No user: ${username}`);
+    const { firstName, lastName, email, isAdmin } = userRes.rows[0];
+    const user = { username, firstName, lastName, email, isAdmin };
+
+    // get list of jobs
+    const jobs = [];
+    for (let userApplication of userRes.rows) {
+      const { jobId } = userApplication;
+      // if user hasn't applied to any jobs, row will have jobId be null
+      if (jobId) {
+        jobs.push(jobId);
+      }
+    }
+    user.jobs = jobs;
 
     return user;
+  }
+
+  /** Makes an application between user and job.
+   * 
+   * Returns undefined
+   * 
+   * Throws BadRequestError if application with same user and job has already
+   * been made.
+   * Throws NotFoundError if user or job not found.
+   */
+
+  static async apply(username, jobId) {
+    const duplicateCheck = await db.query(
+          "SELECT * FROM applications WHERE username = $1 AND job_id = $2",
+        [username, jobId]
+    );
+    if (duplicateCheck.rows[0]) {
+      throw new BadRequestError(
+        `User ${username} already applied to job with id ${jobId}`
+      );
+    }
+
+    // validate that username and jobId represent real user and job
+    const userCheck = await db.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+    if (!userCheck.rows[0]) {
+      throw new NotFoundError(`No user: ${username}`);
+    }
+    const jobCheck = await db.query(
+      `SELECT * FROM jobs WHERE id = $1`,
+      [jobId]
+    )
+    if (!jobCheck.rows[0]) {
+      throw new NotFoundError(`No job: ${jobId}`);
+    }
+
+    const applicationRes = await db.query(
+          "INSERT INTO applications (username, job_id) VALUES ($1, $2)",
+        [username, jobId]
+    );
   }
 
   /** Update user data with `data`.

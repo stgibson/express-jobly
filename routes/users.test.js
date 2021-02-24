@@ -14,11 +14,19 @@ const {
   u1Token,
   u2Token
 } = require("./_testCommon");
+const { get } = require("../models/user");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
+
+// function that gets id for job given title
+async function getId(title) {
+  const result = await
+    db.query("SELECT id FROM jobs WHERE title = $1", [title]);
+  return result.rows[0].id;
+}
 
 /************************************** POST /users */
 
@@ -198,7 +206,8 @@ describe("GET /users/:username", function () {
         firstName: "U2F",
         lastName: "U2L",
         email: "user2@user.com",
-        isAdmin: false
+        isAdmin: false,
+        jobs: []
       }
     });
   });
@@ -213,7 +222,27 @@ describe("GET /users/:username", function () {
         firstName: "U2F",
         lastName: "U2L",
         email: "user2@user.com",
-        isAdmin: false
+        isAdmin: false,
+        jobs: []
+      }
+    });
+  });
+
+  test("works with job application", async function () {
+    const id = await getId("j1");
+    await request(app).post(`/users/u1/jobs/${id}`)
+        .set("authorization", `Bearer ${u1Token}`);
+    const resp = await request(app)
+        .get(`/users/u1`)
+        .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.body).toEqual({
+      user: {
+        username: "u1",
+        firstName: "U1F",
+        lastName: "U1L",
+        email: "user1@user.com",
+        isAdmin: true,
+        jobs: [id]
       }
     });
   });
@@ -234,6 +263,59 @@ describe("GET /users/:username", function () {
   test("not found if user not found", async function () {
     const resp = await request(app)
         .get(`/users/nope`)
+        .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(404);
+  });
+});
+
+/************************************** POST /users/:username/jobs/:id */
+
+describe("POST /users/:username/jobs/:id", function () {
+  test("works for admins", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post(`/users/u2/jobs/${id}`)
+        .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
+    expect(resp.body).toEqual({ applied: id.toString() }); // Reviewed how to use toString() on integer at https://www.w3schools.com/jsref/jsref_tostring_number.asp
+  });
+
+  test("works for applying for self", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post(`/users/u2/jobs/${id}`)
+        .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(200);
+    expect(resp.body).toEqual({ applied: id.toString() });
+  });
+
+  test("unauth for non-admins applying for other user", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post(`/users/u1/jobs/${id}`)
+        .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
+  });
+
+  test("unauth for anon", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post(`/users/u1/jobs/${id}`);
+    expect(resp.statusCode).toEqual(401);
+  });
+
+  test("not found if user not found", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post(`/users/none/jobs/${id}`)
+        .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(404);
+  });
+
+  test("not found if job not found", async function () {
+    const id = await getId("j1");
+    const resp = await request(app)
+        .post("/users/u2/jobs/0")
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(404);
   });
