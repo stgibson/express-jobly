@@ -33,7 +33,7 @@ function sqlForPartialUpdate(dataToUpdate, jsToSql) {
  * 
  * Returns SQL code
  */
-function generateFiltersSql({ nameLike, minEmployees, maxEmployees }) {
+function generateCompanyFiltersSql({ nameLike, minEmployees, maxEmployees }) {
   let filtersSql = "";
   const values = [];
   if (nameLike) {
@@ -65,4 +65,43 @@ function generateFiltersSql({ nameLike, minEmployees, maxEmployees }) {
   return { filtersSql, values };
 }
 
-module.exports = { sqlForPartialUpdate, generateFiltersSql };
+/**
+ * Generates SQL code for filtering jobs
+ * 
+ * Can filter by titleLike, minSalary, and hasEquity
+ * 
+ * Returns SQL code
+ */
+function generateJobFiltersSql({ titleLike, minSalary, hasEquity }) {
+  let filtersSql = "";
+  const values = [];
+  if (titleLike) {
+    filtersSql += "WHERE title ILIKE $1"; // Learned how to use % as wildcard at https://www.w3schools.com/sql/sql_like.asp
+    values.push(`%${titleLike}%`);
+  }
+  if (minSalary) {
+    // if previous filters weren't passed in, start request with this filter
+    if (!filtersSql) {
+      filtersSql += "WHERE salary >= $1";
+    }
+    // otherwise, add on filter
+    else {
+      filtersSql += " AND salary >= $2";
+    }
+    values.push(minSalary);
+  }
+  if (hasEquity) {
+    // since variable could be $1, $2, or $3, determine by length of values
+    const numVar = values.length + 1
+    if (!filtersSql) {
+      filtersSql += `WHERE equity IS NOT NULL`; // Learned how to use IS NOT NULL at https://www.w3schools.com/sql/sql_null_values.asp
+    }
+    else {
+      filtersSql += ` AND equity IS NOT NULL`;
+    }
+  }
+  return { filtersSql, values };
+}
+
+module.exports =
+  { sqlForPartialUpdate, generateCompanyFiltersSql, generateJobFiltersSql };

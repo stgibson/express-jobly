@@ -2,7 +2,7 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate } = require("../helpers/sql");
+const { sqlForPartialUpdate, generateJobFiltersSql } = require("../helpers/sql");
 
 /** Related functions for jobs. */
 
@@ -52,11 +52,45 @@ class Job {
    * Returns [{ id, title, salary, equity, companyHandle }, ...]
    * */
 
-  static async findAll() {     
+  static async findAll(filters) {
+    if (!filters || !Object.keys(filters).length) { // Adapted from https://stackoverflow.com/questions/5223/length-of-a-javascript-object
+      const jobsRes = await db.query(
+        `SELECT id, title, salary, equity, company_handle AS "companyHandle"
+         FROM jobs
+         ORDER BY title`);
+      return jobsRes.rows;
+    }
+    let { titleLike, minSalary, hasEquity, ...badFilters } = filters;
+    // convert minSalary to in and hasEquity to bool
+    if (minSalary) {
+      minSalary = Number.parseInt(minSalary);
+    }
+    if (hasEquity === "true") {
+      hasEquity = true;
+    }
+    if (hasEquity === "false") {
+      hasEquity = false;
+    }
+    if (Number.isNaN(minSalary)) {
+      throw new BadRequestError("minSalary must be an integer");
+    }
+    if (hasEquity !== undefined && hasEquity !== true && hasEquity !== false) {
+      throw new BadRequestError("hasEquity must be either true or false");
+    }
+    // validate request
+    if (Object.keys(badFilters).length) {
+      throw new BadRequestError(
+        "Can only pass titleLike, minSalary, and hasEquity as filters"
+      );
+    }
+    // create SQL filtering only for filters passed
+    const { filtersSql, values } =
+      generateJobFiltersSql({ titleLike, minSalary, hasEquity });
     const jobsRes = await db.query(
       `SELECT id, title, salary, equity, company_handle AS "companyHandle"
-       FROM jobs
-       ORDER BY title`
+       FROM jobs ${filtersSql}
+       ORDER BY title`,
+      values
     );
     return jobsRes.rows;
   }

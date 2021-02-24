@@ -104,52 +104,50 @@ describe("GET /jobs", function () {
           title: "j2",
           salary: 85000,
           equity: "0.55",
-          companyHandle: "c2"
+          companyHandle: "c1"
+        },
+        {
+          id: expect.any(Number),
+          title: "j3",
+          salary: 75000,
+          equity: null,
+          companyHandle: "c1"
         }
       ]
     });
   });
 
-  // test("filters work", async function () {
-  //   const params = {
-  //     nameLike: "c",
-  //     minEmployees: 2,
-  //     maxEmployees: 2
-  //   };
-  //   const resp = await request(app).get("/companies").query(params); // Adapted from https://stackoverflow.com/questions/40309713/how-to-send-query-string-parameters-using-supertest
-  //   expect(resp.body).toEqual({
-  //     companies:
-  //       [
-  //         {
-  //           handle: "c2",
-  //           name: "C2",
-  //           description: "Desc2",
-  //           numEmployees: 2,
-  //           logoUrl: "http://c2.img"
-  //         }
-  //       ]
-  //   });
-  // });
+  test("filters work", async function () {
+    const params = {
+      titleLike: "j",
+      minSalary: "75000",
+      hasEquity: "true"
+    };
+    const resp = await request(app).get("/jobs").query(params); // Adapted from https://stackoverflow.com/questions/40309713/how-to-send-query-string-parameters-using-supertest
+    expect(resp.body).toEqual({
+      jobs:
+        [
+          {
+            id: expect.any(Number),
+            title: "j2",
+            salary: 85000,
+            equity: "0.55",
+            companyHandle: "c1"
+          }
+        ]
+    });
+  });
 
-  // test("get 400 if minEmployees > maxEmployees", async function () {
-  //   const params = {
-  //     minEmployees: 3,
-  //     maxEmployees: 2
-  //   };
-  //   const resp = await request(app).get("/companies").query(params);
-  //   expect(resp.status).toEqual(400);
-  // });
-
-  // test("get 400 if send bad filter", async function () {
-  //   const params = {
-  //     nameLike: "c",
-  //     minEmployees: 2,
-  //     maxEmployees: 2,
-  //     badFilter: "Bad Filter"
-  //   };
-  //   const resp = await request(app).get("/companies").query(params);
-  //   expect(resp.status).toEqual(400);
-  // });
+  test("get 400 if send bad filter", async function () {
+    const params = {
+      titleLike: "j",
+      minSalary: "75000",
+      hasEquity: "true",
+      badFilter: "Bad Filter"
+    };
+    const resp = await request(app).get("/jobs").query(params);
+    expect(resp.status).toEqual(400);
+  });
 });
 
 /************************************** GET /jobs/:handle */

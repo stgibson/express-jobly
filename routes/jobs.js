@@ -52,7 +52,7 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
 
 router.get("/", async function (req, res, next) {
   try {
-    const jobs = await Job.findAll();
+    const jobs = await Job.findAll(req.query);
     return res.json({ jobs });
   } catch (err) {
     return next(err);
