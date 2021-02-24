@@ -119,14 +119,39 @@ class Company {
                   name,
                   description,
                   num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
+                  logo_url AS "logoUrl",
+                  id,
+                  title,
+                  salary,
+                  equity,
+                  company_handle AS "companyHandle"
+           FROM companies c LEFT JOIN jobs j ON c.handle = j.company_handle
            WHERE handle = $1`,
         [handle]);
 
-    const company = companyRes.rows[0];
+    if (!companyRes.rows.length) {
+      throw new NotFoundError(`No company: ${handle}`);
+    }
 
-    if (!company) throw new NotFoundError(`No company: ${handle}`);
+    const {
+      name,
+      description,
+      numEmployees,
+      logoUrl
+    } = companyRes.rows[0];
+    const company = { handle, name, description, numEmployees, logoUrl };
+
+    // get info on each job at company
+    const jobs = [];
+    for (let companyJob of companyRes.rows) {
+      const { id, title, salary, equity, companyHandle } = companyJob;
+      // if no jobs, the first row will have job fields as null
+      if (id) {
+        const job = { id, title, salary, equity, companyHandle };
+        jobs.push(job);
+      }
+    }
+    company.jobs = jobs;
 
     return company;
   }
