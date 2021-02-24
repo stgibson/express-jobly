@@ -113,8 +113,8 @@ describe("GET /companies", function () {
   test("filters work", async function () {
     const params = {
       nameLike: "c",
-      minEmployees: 2,
-      maxEmployees: 2
+      minEmployees: "2",
+      maxEmployees: "2"
     };
     const resp = await request(app).get("/companies").query(params); // Adapted from https://stackoverflow.com/questions/40309713/how-to-send-query-string-parameters-using-supertest
     expect(resp.body).toEqual({
@@ -133,8 +133,8 @@ describe("GET /companies", function () {
 
   test("get 400 if minEmployees > maxEmployees", async function () {
     const params = {
-      minEmployees: 3,
-      maxEmployees: 2
+      minEmployees: "3",
+      maxEmployees: "2"
     };
     const resp = await request(app).get("/companies").query(params);
     expect(resp.status).toEqual(400);
@@ -143,8 +143,8 @@ describe("GET /companies", function () {
   test("get 400 if send bad filter", async function () {
     const params = {
       nameLike: "c",
-      minEmployees: 2,
-      maxEmployees: 2,
+      minEmployees: "2",
+      maxEmployees: "2",
       badFilter: "Bad Filter"
     };
     const resp = await request(app).get("/companies").query(params);

@@ -102,7 +102,7 @@ describe("findAll", function () {
   });
 
   test("filters by min employees", async function () {
-    const minEmployees = 2;
+    const minEmployees = "2";
     const filters = { minEmployees };
     const companies = await Company.findAll(filters);
     expect(companies).toEqual([
@@ -124,7 +124,7 @@ describe("findAll", function () {
   });
 
   test("filters by max employees", async function () {
-    const maxEmployees = 2;
+    const maxEmployees = "2";
     const filters = { maxEmployees };
     const companies = await Company.findAll(filters);
     expect(companies).toEqual([
@@ -147,8 +147,8 @@ describe("findAll", function () {
 
   test("handles all filters at once", async function () {
     const nameLike = "c";
-    const minEmployees = 2
-    const maxEmployees = 2;
+    const minEmployees = "2"
+    const maxEmployees = "2";
     const filters = { nameLike, minEmployees, maxEmployees };
     const companies = await Company.findAll(filters);
     expect(companies).toEqual([
@@ -164,10 +164,34 @@ describe("findAll", function () {
 
   test("throws error if minEmployees > maxEmployees", async function () {
     try {
-      const minEmployees = 3
-      const maxEmployees = 2;
+      const minEmployees = "3"
+      const maxEmployees = "2";
       const filters = { minEmployees, maxEmployees };
       await Company.findAll(filters);
+    }
+    catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  });
+
+  test("throws error if minEmployees not integer", async function () {
+    try {
+      const minEmployees = "two"
+      const filters = { minEmployees };
+      await Company.findAll(filters);
+      fail();
+    }
+    catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  });
+
+  test("throws error if maxEmployees not integer", async function () {
+    try {
+      const maxEmployees = "two"
+      const filters = { maxEmployees };
+      await Company.findAll(filters);
+      fail();
     }
     catch (err) {
       expect(err instanceof BadRequestError).toBeTruthy();
@@ -177,11 +201,12 @@ describe("findAll", function () {
   test("throws error if additional filters", async function () {
     try {
       const nameLike = "c";
-      const minEmployees = 2;
-      const maxEmployees = 2;
+      const minEmployees = "2";
+      const maxEmployees = "2";
       const badFilter = "Bad Filter";
       const filters = { nameLike, minEmployees, maxEmployees, badFilter };
       await Company.findAll(filters);
+      fail();
     }
     catch (err) {
       expect(err instanceof BadRequestError).toBeTruthy();

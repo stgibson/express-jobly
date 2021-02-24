@@ -2,7 +2,8 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate, generateFiltersSql } = require("../helpers/sql");
+const { sqlForPartialUpdate, generateCompanyFiltersSql } =
+  require("../helpers/sql");
 
 /** Related functions for companies. */
 
@@ -66,7 +67,18 @@ class Company {
          ORDER BY name`);
       return companiesRes.rows;
     }
-    const { nameLike, minEmployees, maxEmployees, ...badFilters } = filters;
+    let { nameLike, minEmployees, maxEmployees, ...badFilters } = filters;
+    // convert minEmployees and maxEmployees to ints
+    if (minEmployees) {
+      minEmployees = Number.parseInt(minEmployees); // Adapted from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/parseInt
+    }
+    if (maxEmployees) {
+      maxEmployees = Number.parseInt(maxEmployees);
+    }
+    if (Number.isNaN(minEmployees) || Number.isNaN(maxEmployees)) { // Adapted from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/parseInt
+      throw new
+        BadRequestError("minEmployees and maxEmployees must both be integers");
+    }
     // validate request
     if (minEmployees && maxEmployees && minEmployees > maxEmployees) {
       throw new
@@ -74,14 +86,12 @@ class Company {
     }
     if (Object.keys(badFilters).length) {
       throw new BadRequestError(
-        "Can only pass name, minEmployees, and maxEmployees as filters"
+        "Can only pass nameLike, minEmployees, and maxEmployees as filters"
       );
     }
     // create SQL filtering only for filters passed
     const { filtersSql, values } =
-      generateFiltersSql({ nameLike, minEmployees, maxEmployees });
-    console.log(`filterSql: ${filtersSql}`);
-    console.log(values);
+      generateCompanyFiltersSql({ nameLike, minEmployees, maxEmployees });
     const companiesRes = await db.query(
       `SELECT handle,
               name,
