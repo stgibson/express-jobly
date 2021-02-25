@@ -5,6 +5,7 @@
 const jsonschema = require("jsonschema");
 
 const express = require("express");
+const generator = require("generate-password");
 const { ensureLoggedIn, ensureAdmin, ensureCanAccessUser } =
   require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
@@ -29,14 +30,16 @@ const router = express.Router();
  **/
 
 router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
+  const password = generator.generate({ length: 10, numbers: true }); // From https://www.npmjs.com/package/generate-password
+  const userData = { ...req.body, password };
   try {
-    const validator = jsonschema.validate(req.body, userNewSchema);
+    const validator = jsonschema.validate(userData, userNewSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);
       throw new BadRequestError(errs);
     }
 
-    const user = await User.register(req.body);
+    const user = await User.register(userData);
     const token = createToken(user);
     return res.status(201).json({ user, token });
   } catch (err) {
