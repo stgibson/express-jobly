@@ -191,7 +191,8 @@ class User {
     }
 
     const applicationRes = await db.query(
-          "INSERT INTO applications (username, job_id) VALUES ($1, $2)",
+          `INSERT INTO applications (username, job_id, state)
+           VALUES ($1, $2, 'applied')`,
         [username, jobId]
     );
   }

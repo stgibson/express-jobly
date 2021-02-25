@@ -1,3 +1,6 @@
+/* Learned how to use ENUM at https://www.postgresql.org/docs/9.1/datatype-enum.html */
+CREATE TYPE status AS ENUM ('interested', 'applied', 'accepted', 'rejected');
+
 CREATE TABLE companies (
   handle VARCHAR(25) PRIMARY KEY CHECK (handle = lower(handle)),
   name TEXT UNIQUE NOT NULL,
@@ -30,5 +33,6 @@ CREATE TABLE applications (
     REFERENCES users ON DELETE CASCADE,
   job_id INTEGER
     REFERENCES jobs ON DELETE CASCADE,
-  PRIMARY KEY (username, job_id)
+  PRIMARY KEY (username, job_id),
+  state status NOT NULL
 );
